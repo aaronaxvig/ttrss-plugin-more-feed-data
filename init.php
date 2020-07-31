@@ -2,7 +2,7 @@
 require 'SchemaManager.php';
 
 class more_feed_data extends Plugin {
-	static $REQUIRED_SCHEMA_VERSION = 2;
+	static $REQUIRED_SCHEMA_VERSION = 3;
 	static $KEY_SCHEMA_VERSION = "schema_version";
 	static $PLUGIN_FOLDER = "plugins.local/more_feed_data";
 
@@ -49,21 +49,7 @@ class more_feed_data extends Plugin {
 		}
 	}
 
-	function about() {
-		return array(1.0,
-			"Stores more feed data",
-			"Aaron Axvig",
-			false,
-			"https://github.com/aaronaxvig/ttrss-plugin-more-feed-data");
-	}
-
-	function init($host) {
-		$this->host = $host;
-		$host->add_hook($host::HOOK_FEED_FETCHED, $this);
-		$host->add_hook($host::HOOK_PREFS_TAB, $this);
-	}
-
-	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
+	function processFeed($feed_data, $fetch_url) {
 		$doc = new DOMDocument();
 		$doc->loadXML($feed_data);
 
@@ -83,6 +69,8 @@ class more_feed_data extends Plugin {
 		$generator;
 		$generatorUri;
 		$generatorVersion;
+		$cleanGenerator;
+		$cleanGeneratorVersion;
 
 		if ($root && $root->length > 0) {
 			$root = $root->item(0);
@@ -116,21 +104,69 @@ class more_feed_data extends Plugin {
 					//printf("<p>Generator: %s</p>", $generator);
 					//printf("<p>Generator URI: %s</p>", $generatorUri);
 					//printf("<p>Generator version: %s</p>", $generatorVersion);
+
+					if(strpos($generator, "https://wordpress.org/?v=") === 0) {
+						// https://wordpress.org/?v=5.4.2
+						$cleanGenerator = "Wordpress";
+						$cleanGeneratorVersion = str_replace("https://wordpress.org/?v=", "", $generator);
+					}
+					else if(strpos($generator, "Ghost ") === 0) {
+						// Ghost 3.26
+						$cleanGenerator = "Ghost";
+						$cleanGeneratorVersion = str_replace("Ghost ", "", $generator);
+					}
+					else if(strpos($generator, "Jekyll v") === 0) {
+						// Hugo -- gohugo.io
+						$cleanGenerator = "Jekyll";
+						$cleanGeneratorVersion = str_replace("Jekyll v", "", $generator);
+					}
+					else if(strpos($generator, "Site-Server v") === 0) {
+						// Site-Server v6.0.0-25071-25071 (http://www.squarespace.com)
+						$cleanGenerator = "SquareSpace Site-Server";
+						$trimmedStart = str_replace("Site-Server v", "", $generator);
+						$cleanGeneratorVersion = substr($trimmedStart, 0, strpos($trimmedStart, " (http://www.squarespace.com)"));
+					}
+					else if(strpos($generator, "Hugo") === 0) {
+						// Hugo -- gohugo.io
+						$cleanGenerator = "Hugo";
+					}
+					else if(strpos($generator, "Medium") === 0) {
+						// Medium
+						$cleanGenerator = "Medium";
+					}
+					else if(strpos($generator, "Substack") === 0) {
+						// Substack
+						$cleanGenerator = "Substack";
+					}
+					else if(strpos($generator, "PyNITLog") === 0) {
+						// PyNITLog
+						$cleanGenerator = "PyNITLog";
+					}
+					else if(strpos($generator, "newtelligence dasBlog ") === 0) {
+						// newtelligence dasBlog 4.0.0.0
+						$cleanGenerator = "dasBlog";
+						$cleanGeneratorVersion = str_replace("newtelligence dasBlog ", "", $generator);
+					}
+
 					$sth = $this->pdo->prepare("
 						WITH feed AS (
 							SELECT id FROM ttrss_feeds WHERE feed_url = :feedUrl)
-						INSERT INTO ttrss_plugin_more_feed_data (feedid, generator, generatoruri, generatorversion) 
-							SELECT id, :generator, :generatorUri, :generatorVersion
+						INSERT INTO ttrss_plugin_more_feed_data (feedid, generator, generatoruri, generatorversion, cleanGenerator, cleanGeneratorVersion) 
+							SELECT id, :generator, :generatorUri, :generatorVersion, :cleanGenerator, :cleanGeneratorVersion
 							FROM feed
 						ON CONFLICT (feedId) DO UPDATE SET
 							generator = EXCLUDED.generator,
 							generatorUri = EXCLUDED.generatorUri,
-							generatorVersion = EXCLUDED.generatorVersion;");
+							generatorVersion = EXCLUDED.generatorVersion,
+							cleanGenerator = EXCLUDED.cleanGenerator,
+							cleanGeneratorVersion = EXCLUDED.cleanGeneratorVersion;");
 					if ($sth->execute(array(
 						':feedUrl' => $fetch_url,
 						':generator' => $generator,
 						':generatorUri' => $generatorUri,
-						':generatorVersion' => $generatorVersion))) {
+						':generatorVersion' => $generatorVersion,
+						':cleanGenerator' => $cleanGenerator,
+						':cleanGeneratorVersion' => $cleanGeneratorVersion))) {
 						//print("<p>Inserted/Updated</p>");
 					}
 				}
@@ -145,6 +181,24 @@ class more_feed_data extends Plugin {
 		}
 	}
 
+	function about() {
+		return array(1.1,
+			"Stores more feed data",
+			"Aaron Axvig",
+			false,
+			"https://github.com/aaronaxvig/ttrss-plugin-more-feed-data");
+	}
+
+	function init($host) {
+		$this->host = $host;
+		$host->add_hook($host::HOOK_FEED_FETCHED, $this);
+		$host->add_hook($host::HOOK_PREFS_TAB, $this);
+	}
+
+	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
+		$this->processFeed($feed_data, $fetch_url);
+	}
+
 	function hook_prefs_tab($args) {
 		if ($args != "prefPrefs") return;
 
@@ -155,28 +209,9 @@ class more_feed_data extends Plugin {
 		$this->check_database();
 
 		$fetch_url = "https://wordpress.org/feed/";
-		$sampleRss = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
-		<rss version=\"2.0\">
-		<channel>
-		 <title>RSS Title</title>
-		 <description>This is an example of an RSS feed</description>
-		 <link>http://www.example.com/main.html</link>
-		 <lastBuildDate>Mon, 06 Sep 2010 00:01:00 +0000 </lastBuildDate>
-		 <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
-		 <ttl>1800</ttl>
-		 <generator uri=\"generatorUri\" version=\"generatorVersion\">testGenerator</generator>
-		
-		 <item>
-		  <title>Example entry</title>
-		  <description>Here is some text containing an interesting description.</description>
-		  <link>http://www.example.com/blog/post/1</link>
-		  <guid isPermaLink=\"false\">7bd204c6-1655-4c27-aeee-53f933c5395f</guid>
-		  <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
-		 </item>
-		
-		</channel>
-		</rss>";
+		$feed_data = file_get_contents("plugins.local/more_feed_data/sampleFeed.xml");
 
+		//$this->processFeed($feed_data, $fetch_url);
 		
 
 		print "</div>";
