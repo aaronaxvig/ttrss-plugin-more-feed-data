@@ -35,6 +35,20 @@ class more_feed_data extends Plugin {
 		$sth->execute();
 		$database_table_exists = $sth->fetch(PDO::FETCH_ASSOC)['exists'];
 
+		if (!$database_table_exists) {
+			print "Creating table";
+			$sth = $this->pdo->prepare(file_get_contents("plugins.local/more_feed_data/schema/more_feed_data_schema_pgsql.sql"));
+			if ($sth->execute()) {
+				print "<p>Table created, setting installed schema version.</p>";
+				$this->host->set($this, $this::$KEY_SCHEMA_VERSION, 1);
+				$database_table_exists = true;
+				print "<p>Installed version set: " . $this->host->get($this, $this::$KEY_SCHEMA_VERSION) . "</p>";
+			}
+			else {
+				print "<p>Table creation failed.</p>";
+			}
+		}
+
 		if ($database_table_exists) {
 			print "<p>Database table exists.</p>";
 			$installed_version = $this->host->get($this, $this::$KEY_SCHEMA_VERSION);
@@ -55,18 +69,6 @@ class more_feed_data extends Plugin {
 				else {
 					printf("<p>Schema failed to upgrade to %d.", $version_to_install);
 				}
-			}
-		}
-		else {
-			print "Creating table";
-			$sth = $this->pdo->prepare(file_get_contents("plugins.local/more_feed_data/schema/more_feed_data_schema_pgsql.sql"));
-			if ($sth->execute()) {
-				print "<p>Table created, setting installed schema version.</p>";
-				$this->host->set($this, $this::$KEY_SCHEMA_VERSION, 1);
-				print "<p>Installed version set: " . $this->host->get($this, $this::$KEY_SCHEMA_VERSION) . "</p>";
-			}
-			else {
-				print "<p>Table creation failed.</p>";
 			}
 		}
 
