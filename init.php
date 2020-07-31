@@ -108,7 +108,7 @@ class more_feed_data extends Plugin {
 
 		$root = $xpath->query("(//atom03:feed|//atom:feed|//channel|//rdf:rdf|//rdf:RDF)");
 
-		$generator = "";
+		$generator;
 		$generatorUri;
 		$generatorVersion;
 
@@ -120,7 +120,6 @@ class more_feed_data extends Plugin {
 
 				switch (mb_strtolower($root->tagName)) {
 					case "rdf:rdf":
-						$generator = "";
 						break;
 					case "channel":
 						$generatorNode = $xpath->query("//channel/generator")->item(0);
@@ -138,13 +137,31 @@ class more_feed_data extends Plugin {
 					return;
 				}
 
-				if($generatorNode) {
+				if ($generatorNode) {
 					$generator = $xpath->query("//channel/generator")->item(0)->nodeValue;
 					$generatorUri = $xpath->query("//channel/generator")->item(0)->getAttribute("uri");
 					$generatorVersion = $xpath->query("//channel/generator")->item(0)->getAttribute("version");
 					printf("<p>Generator: %s</p>", $generator);
 					printf("<p>Generator URI: %s</p>", $generatorUri);
 					printf("<p>Generator version: %s</p>", $generatorVersion);
+					// TODO: don't hardcode the feedID.
+					$sth = $this->pdo->prepare("INSERT INTO ttrss_plugin_more_feed_data(feedId, generator, generatorUri, generatorVersion) 
+						VALUES (:feedId, :generator, :generatorUri, :generatorVersion)
+						ON CONFLICT (feedId) DO UPDATE SET
+							generator = EXCLUDED.generator,
+							generatorUri = EXCLUDED.generatorUri,
+							generatorVersion = EXCLUDED.generatorVersion;");
+					if ($sth->execute(array(
+						':feedId' => 2,
+						':generator' => $generator,
+						':generatorUri' => $generatorUri,
+						':generatorVersion' => $generatorVersion))) {
+						print("<p>Inserted/Updated</p>");
+					}
+				}
+				else {
+					// TODO: remove table row if it exists
+					print("<p>Generator node not found.</p>");
 				}
 			}
 
