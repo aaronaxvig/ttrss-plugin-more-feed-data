@@ -6,31 +6,7 @@ class more_feed_data extends Plugin {
 	static $KEY_SCHEMA_VERSION = "schema_version";
 	static $PLUGIN_FOLDER = "plugins.local/more_feed_data";
 
-	function about() {
-		return array(1.0,
-			"Stores more feed data",
-			"Aaron Axvig",
-			false,
-			"https://github.com/aaronaxvig/ttrss-plugin-more-feed-data");
-	}
-
-	function init($host) {
-		$this->host = $host;
-		$host->add_hook($host::HOOK_FEED_FETCHED, $this);
-		$host->add_hook($host::HOOK_PREFS_TAB, $this);
-	}
-
-	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
-
-	}
-
-	function hook_prefs_tab($args) {
-		if ($args != "prefPrefs") return;
-
-		print "<div dojoType='dijit.layout.AccordionPane' title=\"<i class='material-icons'>storage</i> More Feed Data plugin\">";
-
-		print "<h2>Database schema</h2>";
-
+	function check_database() {
 		$sth = $this->pdo->prepare("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = 'ttrss_plugin_more_feed_data');");
 		$sth->execute();
 		$database_table_exists = $sth->fetch(PDO::FETCH_ASSOC)['exists'];
@@ -71,32 +47,25 @@ class more_feed_data extends Plugin {
 				}
 			}
 		}
+	}
 
-		$fetch_url = "https://wordpress.org/feed/";
-		$sampleRss = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
-		<rss version=\"2.0\">
-		<channel>
-		 <title>RSS Title</title>
-		 <description>This is an example of an RSS feed</description>
-		 <link>http://www.example.com/main.html</link>
-		 <lastBuildDate>Mon, 06 Sep 2010 00:01:00 +0000 </lastBuildDate>
-		 <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
-		 <ttl>1800</ttl>
-		 <generator uri=\"generatorUri\" version=\"generatorVersion\">testGenerator</generator>
-		
-		 <item>
-		  <title>Example entry</title>
-		  <description>Here is some text containing an interesting description.</description>
-		  <link>http://www.example.com/blog/post/1</link>
-		  <guid isPermaLink=\"false\">7bd204c6-1655-4c27-aeee-53f933c5395f</guid>
-		  <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
-		 </item>
-		
-		</channel>
-		</rss>";
+	function about() {
+		return array(1.0,
+			"Stores more feed data",
+			"Aaron Axvig",
+			false,
+			"https://github.com/aaronaxvig/ttrss-plugin-more-feed-data");
+	}
 
+	function init($host) {
+		$this->host = $host;
+		$host->add_hook($host::HOOK_FEED_FETCHED, $this);
+		$host->add_hook($host::HOOK_PREFS_TAB, $this);
+	}
+
+	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
 		$doc = new DOMDocument();
-		$doc->loadXML($sampleRss);
+		$doc->loadXML($feed_data);
 
 		$root = $doc->firstChild;
 		$xpath = new DOMXPath($doc);
@@ -136,7 +105,7 @@ class more_feed_data extends Plugin {
 						}
 						break;
 					default:
-						printf("Unknown/unsupported feed type");
+						//printf("Unknown/unsupported feed type");
 					return;
 				}
 
@@ -144,9 +113,9 @@ class more_feed_data extends Plugin {
 					$generator = $xpath->query("//channel/generator")->item(0)->nodeValue;
 					$generatorUri = $xpath->query("//channel/generator")->item(0)->getAttribute("uri");
 					$generatorVersion = $xpath->query("//channel/generator")->item(0)->getAttribute("version");
-					printf("<p>Generator: %s</p>", $generator);
-					printf("<p>Generator URI: %s</p>", $generatorUri);
-					printf("<p>Generator version: %s</p>", $generatorVersion);
+					//printf("<p>Generator: %s</p>", $generator);
+					//printf("<p>Generator URI: %s</p>", $generatorUri);
+					//printf("<p>Generator version: %s</p>", $generatorVersion);
 					$sth = $this->pdo->prepare("
 						WITH feed AS (
 							SELECT id FROM ttrss_feeds WHERE feed_url = :feedUrl)
@@ -162,18 +131,53 @@ class more_feed_data extends Plugin {
 						':generator' => $generator,
 						':generatorUri' => $generatorUri,
 						':generatorVersion' => $generatorVersion))) {
-						print("<p>Inserted/Updated</p>");
+						//print("<p>Inserted/Updated</p>");
 					}
 				}
 				else {
-					// TODO: remove table row if it exists
-					print("<p>Generator node not found.</p>");
+					// TODO: blank the values in the database.
+					//print("<p>Generator node not found.</p>");
 				}
 			}
 
 		} else {
 				user_error("Unknown/unsupported feed type", E_USER_NOTICE);
 		}
+	}
+
+	function hook_prefs_tab($args) {
+		if ($args != "prefPrefs") return;
+
+		print "<div dojoType='dijit.layout.AccordionPane' title=\"<i class='material-icons'>storage</i> More Feed Data plugin\">";
+
+		print "<h2>Database schema</h2>";
+
+		$this->check_database();
+
+		$fetch_url = "https://wordpress.org/feed/";
+		$sampleRss = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
+		<rss version=\"2.0\">
+		<channel>
+		 <title>RSS Title</title>
+		 <description>This is an example of an RSS feed</description>
+		 <link>http://www.example.com/main.html</link>
+		 <lastBuildDate>Mon, 06 Sep 2010 00:01:00 +0000 </lastBuildDate>
+		 <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
+		 <ttl>1800</ttl>
+		 <generator uri=\"generatorUri\" version=\"generatorVersion\">testGenerator</generator>
+		
+		 <item>
+		  <title>Example entry</title>
+		  <description>Here is some text containing an interesting description.</description>
+		  <link>http://www.example.com/blog/post/1</link>
+		  <guid isPermaLink=\"false\">7bd204c6-1655-4c27-aeee-53f933c5395f</guid>
+		  <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
+		 </item>
+		
+		</channel>
+		</rss>";
+
+		
 
 		print "</div>";
 	}
