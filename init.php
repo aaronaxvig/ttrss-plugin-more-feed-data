@@ -21,7 +21,7 @@ class more_feed_data extends Plugin {
 	}
 
 	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
-		
+
 	}
 
 	function hook_prefs_tab($args) {
@@ -69,6 +69,89 @@ class more_feed_data extends Plugin {
 				print "<p>Table creation failed.</p>";
 			}
 		}
+
+		$sampleRss = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
+		<rss version=\"2.0\">
+		<channel>
+		 <title>RSS Title</title>
+		 <description>This is an example of an RSS feed</description>
+		 <link>http://www.example.com/main.html</link>
+		 <lastBuildDate>Mon, 06 Sep 2010 00:01:00 +0000 </lastBuildDate>
+		 <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
+		 <ttl>1800</ttl>
+		 <generator uri=\"generatorUri\" version=\"generatorVersion\">testGenerator</generator>
+		
+		 <item>
+		  <title>Example entry</title>
+		  <description>Here is some text containing an interesting description.</description>
+		  <link>http://www.example.com/blog/post/1</link>
+		  <guid isPermaLink=\"false\">7bd204c6-1655-4c27-aeee-53f933c5395f</guid>
+		  <pubDate>Sun, 06 Sep 2009 16:20:00 +0000</pubDate>
+		 </item>
+		
+		</channel>
+		</rss>";
+
+		$doc = new DOMDocument();
+		$doc->loadXML($sampleRss);
+
+		$root = $doc->firstChild;
+		$xpath = new DOMXPath($doc);
+		$xpath->registerNamespace('atom', 'http://www.w3.org/2005/Atom');
+		$xpath->registerNamespace('atom03', 'http://purl.org/atom/ns#');
+		$xpath->registerNamespace('media', 'http://search.yahoo.com/mrss/');
+		$xpath->registerNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+		$xpath->registerNamespace('slash', 'http://purl.org/rss/1.0/modules/slash/');
+		$xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+		$xpath->registerNamespace('content', 'http://purl.org/rss/1.0/modules/content/');
+		$xpath->registerNamespace('thread', 'http://purl.org/syndication/thread/1.0');
+
+		$root = $xpath->query("(//atom03:feed|//atom:feed|//channel|//rdf:rdf|//rdf:RDF)");
+
+		$generator = "";
+		$generatorUri;
+		$generatorVersion;
+
+		if ($root && $root->length > 0) {
+			$root = $root->item(0);
+
+			if ($root) {
+				$generatorNode;
+
+				switch (mb_strtolower($root->tagName)) {
+					case "rdf:rdf":
+						$generator = "";
+						break;
+					case "channel":
+						$generatorNode = $xpath->query("//channel/generator")->item(0);
+						break;
+					case "feed":
+					case "atom:feed":
+						$generatorNode = $xpath->query("//atom:feed/atom:generator")->item(0);
+
+						if (!$generatorNode) {
+							$generatorNode = $xpath->query("//atom03:feed/atom03:generator")->item(0);
+						}
+						break;
+					default:
+						printf("Unknown/unsupported feed type");
+					return;
+				}
+
+				if($generatorNode) {
+					$generator = $xpath->query("//channel/generator")->item(0)->nodeValue;
+					$generatorUri = $xpath->query("//channel/generator")->item(0)->getAttribute("uri");
+					$generatorVersion = $xpath->query("//channel/generator")->item(0)->getAttribute("version");
+					printf("<p>Generator: %s</p>", $generator);
+					printf("<p>Generator URI: %s</p>", $generatorUri);
+					printf("<p>Generator version: %s</p>", $generatorVersion);
+				}
+			}
+
+		} else {
+				user_error("Unknown/unsupported feed type", E_USER_NOTICE);
+		}
+
 		print "</div>";
 	}
 
