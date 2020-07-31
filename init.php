@@ -70,6 +70,7 @@ class more_feed_data extends Plugin {
 			}
 		}
 
+		$fetch_url = "https://wordpress.org/feed/";
 		$sampleRss = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
 		<rss version=\"2.0\">
 		<channel>
@@ -144,15 +145,18 @@ class more_feed_data extends Plugin {
 					printf("<p>Generator: %s</p>", $generator);
 					printf("<p>Generator URI: %s</p>", $generatorUri);
 					printf("<p>Generator version: %s</p>", $generatorVersion);
-					// TODO: don't hardcode the feedID.
-					$sth = $this->pdo->prepare("INSERT INTO ttrss_plugin_more_feed_data(feedId, generator, generatorUri, generatorVersion) 
-						VALUES (:feedId, :generator, :generatorUri, :generatorVersion)
+					$sth = $this->pdo->prepare("
+						WITH feed AS (
+							SELECT id FROM ttrss_feeds WHERE feed_url = :feedUrl)
+						INSERT INTO ttrss_plugin_more_feed_data (feedid, generator, generatoruri, generatorversion) 
+							SELECT id, :generator, :generatorUri, :generatorVersion
+							FROM feed
 						ON CONFLICT (feedId) DO UPDATE SET
 							generator = EXCLUDED.generator,
 							generatorUri = EXCLUDED.generatorUri,
 							generatorVersion = EXCLUDED.generatorVersion;");
 					if ($sth->execute(array(
-						':feedId' => 2,
+						':feedUrl' => $fetch_url,
 						':generator' => $generator,
 						':generatorUri' => $generatorUri,
 						':generatorVersion' => $generatorVersion))) {
