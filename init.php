@@ -197,6 +197,8 @@ class more_feed_data extends Plugin {
 
 	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
 		$this->processFeed($feed_data, $fetch_url);
+
+		return $feed_data;
 	}
 
 	function hook_prefs_tab($args) {
