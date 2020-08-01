@@ -124,24 +124,65 @@ class more_feed_data extends Plugin {
 					$generator = $generatorNode->nodeValue;
 					$generatorUri = $generatorNode->getAttribute("uri");
 					$generatorVersion = $generatorNode->getAttribute("version");
-					//printf("<p>Generator: %s</p>", $generator);
-					//printf("<p>Generator URI: %s</p>", $generatorUri);
-					//printf("<p>Generator version: %s</p>", $generatorVersion);
+
+					// If a version is supplied, we can keep it as "clean".
+					if($generatorVersion) {
+						$cleanGeneratorVersion = $generatorVersion;
+					}
 
 					if(strpos($generator, "https://wordpress.org/?v=") === 0) {
 						// https://wordpress.org/?v=5.4.2
 						$cleanGenerator = "Wordpress";
 						$cleanGeneratorVersion = str_replace("https://wordpress.org/?v=", "", $generator);
 					}
+					else if(strpos($generator, "http://wordpress.com/") === 0) {
+						// http://wordpress.com/
+						$cleanGenerator = "Wordpress";
+					}
+					else if(strpos($generator, "Blogger") === 0) {
+						// Blogger
+						$cleanGenerator = "Blogger";
+					}
+					else if(strpos($generator, "GatsbyJS") === 0) {
+						// GatsbyJS
+						$cleanGenerator = "GatsbyJS";
+					}
 					else if(strpos($generator, "Ghost ") === 0) {
 						// Ghost 3.26
 						$cleanGenerator = "Ghost";
 						$cleanGeneratorVersion = str_replace("Ghost ", "", $generator);
 					}
-					else if(strpos($generator, "Jekyll v") === 0) {
+					else if(strpos($generator, "Hexo") === 0) {
+						// Hexo
+						$cleanGenerator = "Hexo";
+					}
+					else if(strpos($generator, "Hugo") === 0) {
 						// Hugo -- gohugo.io
+						$cleanGenerator = "Hugo";
+					}
+					else if(strpos($generator, "Jekyll") === 0) {
+						$cleanGenerator = "Jekyll";
+					}
+					else if(strpos($generator, "Jekyll v") === 0) {
 						$cleanGenerator = "Jekyll";
 						$cleanGeneratorVersion = str_replace("Jekyll v", "", $generator);
+					}
+					else if(strpos($generator, "Medium") === 0) {
+						// Medium
+						$cleanGenerator = "Medium";
+					}
+					else if(strpos($generator, "Movable Type Pro") === 0) {
+						// Movable Type Pro
+						$cleanGenerator = "Movable Type";
+					}
+					else if(strpos($generator, "newtelligence dasBlog ") === 0) {
+						// newtelligence dasBlog 4.0.0.0
+						$cleanGenerator = "dasBlog";
+						$cleanGeneratorVersion = str_replace("newtelligence dasBlog ", "", $generator);
+					}
+					else if(strpos($generator, "PyNITLog") === 0) {
+						// PyNITLog
+						$cleanGenerator = "PyNITLog";
 					}
 					else if(strpos($generator, "Site-Server v") === 0) {
 						// Site-Server v6.0.0-25071-25071 (http://www.squarespace.com)
@@ -149,26 +190,13 @@ class more_feed_data extends Plugin {
 						$trimmedStart = str_replace("Site-Server v", "", $generator);
 						$cleanGeneratorVersion = substr($trimmedStart, 0, strpos($trimmedStart, " (http://www.squarespace.com)"));
 					}
-					else if(strpos($generator, "Hugo") === 0) {
-						// Hugo -- gohugo.io
-						$cleanGenerator = "Hugo";
-					}
-					else if(strpos($generator, "Medium") === 0) {
-						// Medium
-						$cleanGenerator = "Medium";
-					}
 					else if(strpos($generator, "Substack") === 0) {
 						// Substack
 						$cleanGenerator = "Substack";
 					}
-					else if(strpos($generator, "PyNITLog") === 0) {
-						// PyNITLog
-						$cleanGenerator = "PyNITLog";
-					}
-					else if(strpos($generator, "newtelligence dasBlog ") === 0) {
-						// newtelligence dasBlog 4.0.0.0
-						$cleanGenerator = "dasBlog";
-						$cleanGeneratorVersion = str_replace("newtelligence dasBlog ", "", $generator);
+					else if(strpos($generator, "Svbtle.com") === 0) {
+						// Svbtle.com
+						$cleanGenerator = "Svbtle";
 					}
 
 					$sth = $this->pdo->prepare("
