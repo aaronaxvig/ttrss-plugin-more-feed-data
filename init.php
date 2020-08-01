@@ -121,9 +121,9 @@ class more_feed_data extends Plugin {
 				}
 
 				if ($generatorNode) {
-					$generator = $xpath->query("//channel/generator")->item(0)->nodeValue;
-					$generatorUri = $xpath->query("//channel/generator")->item(0)->getAttribute("uri");
-					$generatorVersion = $xpath->query("//channel/generator")->item(0)->getAttribute("version");
+					$generator = $generatorNode->nodeValue;
+					$generatorUri = $generatorNode->getAttribute("uri");
+					$generatorVersion = $generatorNode->getAttribute("version");
 					//printf("<p>Generator: %s</p>", $generator);
 					//printf("<p>Generator URI: %s</p>", $generatorUri);
 					//printf("<p>Generator version: %s</p>", $generatorVersion);
