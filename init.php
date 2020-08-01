@@ -6,26 +6,49 @@ class more_feed_data extends Plugin {
 	static $KEY_SCHEMA_VERSION = "schema_version";
 	static $PLUGIN_FOLDER = "plugins.local/more_feed_data";
 
+	function drop_table() {
+		print "Dropping table";
+		$sth = $this->pdo->prepare("DROP TABLE IF EXISTS ttrss_plugin_more_feed_data;");
+		if ($sth->execute()) {
+			print "<p>Table dropped.</p>";
+			return true;
+		}
+		else {
+			print "<p>Table drop failed.</p>";
+			return false;
+		}
+	}
+
+	function create_table() {
+		print "Creating table";
+		$sth = $this->pdo->prepare(file_get_contents("plugins.local/more_feed_data/schema/more_feed_data_schema_pgsql.sql"));
+		if ($sth->execute()) {
+			print "<p>Table created, setting installed schema version.</p>";
+			$this->host->set($this, $this::$KEY_SCHEMA_VERSION, 1);
+			print "<p>Installed version set: " . $this->host->get($this, $this::$KEY_SCHEMA_VERSION) . "</p>";
+			return true;
+		}
+		else {
+			print "<p>Table creation failed.</p>";
+			return false;
+		}
+	}
+
 	function check_database() {
 		$sth = $this->pdo->prepare("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = 'ttrss_plugin_more_feed_data');");
 		$sth->execute();
 		$database_table_exists = $sth->fetch(PDO::FETCH_ASSOC)['exists'];
 
 		if (!$database_table_exists) {
-			print "Creating table";
-			$sth = $this->pdo->prepare(file_get_contents("plugins.local/more_feed_data/schema/more_feed_data_schema_pgsql.sql"));
-			if ($sth->execute()) {
-				print "<p>Table created, setting installed schema version.</p>";
-				$this->host->set($this, $this::$KEY_SCHEMA_VERSION, 1);
-				$database_table_exists = true;
-				print "<p>Installed version set: " . $this->host->get($this, $this::$KEY_SCHEMA_VERSION) . "</p>";
-			}
-			else {
-				print "<p>Table creation failed.</p>";
-			}
+			$database_table_exists = $this->create_table();
 		}
 
 		if ($database_table_exists) {
+			if(!$this->host->get($this, $this::$KEY_SCHEMA_VERSION)) {
+				// Database exists but version key is gone.
+				$this->drop_table();
+				$database_table_exists = $this->create_table();
+			}
 			print "<p>Database table exists.</p>";
 			$installed_version = $this->host->get($this, $this::$KEY_SCHEMA_VERSION);
 			print "<p>Installed version: " . $installed_version . "</p>";
