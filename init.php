@@ -295,6 +295,23 @@ class more_feed_data extends Plugin {
 
 		$this->check_database();
 
+		print "<h2>Feed generator stats</h2>";
+		$sth = $this->pdo->prepare("SELECT COUNT(cleanGenerator) AS count, cleanGenerator 
+			FROM ttrss_plugin_more_feed_data
+			GROUP BY cleanGenerator
+			ORDER BY COUNT(cleanGenerator) DESC;");
+		if ($sth->execute()) {
+			printf("<table><thead><th>Count</th><th>Generator</th></thead><tbody>");
+
+			while($row = $sth->fetch()) {
+				printf("<tr><td>%s</td><td>%s</td></tr>", $row['count'], $row['cleangenerator']);
+			}
+			printf("</tbody></table>");
+		}
+		else {
+			printf("<p>Failed to retrieve data for feedId %s</p>", $feed_id);
+		}
+
 		// For testing...
 		$fetch_url = "https://wordpress.org/feed/";
 		$feed_data = file_get_contents("plugins.local/more_feed_data/sampleFeed.xml");
