@@ -167,6 +167,10 @@ class more_feed_data extends Plugin {
 						$cleanGenerator = "Jekyll";
 						$cleanGeneratorVersion = str_replace("Jekyll v", "", $generator);
 					}
+					else if(strpos($generator, "JSitemap Pro") === 0) {
+						// JSitemap Pro
+						$cleanGenerator = "Joomla!";
+					}
 					else if(strpos($generator, "Medium") === 0) {
 						// Medium
 						$cleanGenerator = "Medium";
@@ -179,6 +183,11 @@ class more_feed_data extends Plugin {
 						// newtelligence dasBlog 4.0.0.0
 						$cleanGenerator = "dasBlog";
 						$cleanGeneratorVersion = str_replace("newtelligence dasBlog ", "", $generator);
+					}
+					else if(strpos($generator, "oldSchool v") === 0) {
+						// oldSchool v0.5.59
+						$cleanGenerator = "oldSchool";
+						$cleanGeneratorVersion = str_replace("oldSchool v", "", $generator);
 					}
 					else if(strpos($generator, "PyNITLog") === 0) {
 						// PyNITLog
@@ -197,6 +206,10 @@ class more_feed_data extends Plugin {
 					else if(strpos($generator, "Svbtle.com") === 0) {
 						// Svbtle.com
 						$cleanGenerator = "Svbtle";
+					}
+					else if(strpos($generator, "TypePad") === 0) {
+						// TypePad
+						$cleanGenerator = "TypePad";
 					}
 
 					$sth = $this->pdo->prepare("
