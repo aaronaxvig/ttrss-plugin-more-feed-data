@@ -2,13 +2,18 @@
 TT-RSS plugin to store more data about feeds.  Currently only PostgreSQL is supported.
 
 ## Install
-1. Copy the more_feed_data folder into your TT-RSS install's plugins.local folder.  Git clone preferably.
+1. Copy the more_feed_data folder into your TT-RSS install's plugins.local folder.  Git clone preferably (then will probably have to rename the folder to `more_feed_data`).
 2. Go to Preferences and enable the plugin.
 3. When the Preferences page reloads, this extension will check your database and create the new table.  It produces some output that can be viewed in the extension's accordion pane.
 
 ## Upgrade
 1. Replace all the files with their new ones.  Git pull preferably.
 2. Load the Preferences page in TT-RSS.  This will cause it to check the database and upgrade the table if necessary.  The output of this can be viewed in the extension's accordion pane.
+
+## How to use
+The additional data is parsed and stored only after a feed is processed, so you will have to wait if you just installed the extension.  Probably a few will show up after 15 minutes or so if you have ~100 feeds; it all depends on each feed's update frequency though.
+
+Summary statistics can be viewed on the Preferences accordion pane for the extension.  The stored values for a specific feed can be viewed on the Plugins tab of the Edit Feed window.
 
 ## Why
 I want to hoard some old blog posts, and I think it makes sense to do that in RSS feed-reading software.  Wordpress allows pagination of RSS feeds so this idea will work for about 1/3 of blogs, which is enough to be interest to me.  So I need to know which blogs are run on Wordpress, and fortunately Wordpress populates the optional `<generated>` element in its feed documents.  But TT-RSS does not store the data from that field, so I made this extension to do it.

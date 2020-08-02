@@ -246,7 +246,7 @@ class more_feed_data extends Plugin {
 	}
 
 	function about() {
-		return array(1.1,
+		return array(1.2,
 			"Stores more feed data",
 			"Aaron Axvig",
 			false,
