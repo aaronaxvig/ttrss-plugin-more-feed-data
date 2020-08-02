@@ -244,6 +244,27 @@ class more_feed_data extends Plugin {
 		$this->host = $host;
 		$host->add_hook($host::HOOK_FEED_FETCHED, $this);
 		$host->add_hook($host::HOOK_PREFS_TAB, $this);
+		$host->add_hook($host::HOOK_PREFS_EDIT_FEED, $this);
+	}
+
+	function hook_prefs_edit_feed($feed_id) {
+		printf("<h2>More feed data</h2>");
+
+		$sth = $this->pdo->prepare("SELECT * FROM public.ttrss_plugin_more_feed_data WHERE feedId = :feedId;");
+		if ($sth->execute(array(
+			':feedId' => $feed_id))) {
+			$row = $sth->fetch();
+			printf("<ol>");
+			printf("<li>Generator: %s</li>", $row['generator']);
+			printf("<li>Generator URI: %s</li>", $row['generatoruri']);
+			printf("<li>Generator version: %s</li>", $row['generatorversion']);
+			printf("<li>Generator (clean): %s</li>", $row['cleangenerator']);
+			printf("<li>Generator version (clean): %s</li>", $row['cleangeneratorversion']);
+			printf("</ol>");
+		}
+		else {
+			printf("<p>Failed to retrieve data for feedId %s</p>", $feed_id);
+		}
 	}
 
 	function hook_feed_fetched($feed_data, $fetch_url, $owner_uid, $feed) {
@@ -261,10 +282,12 @@ class more_feed_data extends Plugin {
 
 		$this->check_database();
 
+		// For testing...
 		$fetch_url = "https://wordpress.org/feed/";
 		$feed_data = file_get_contents("plugins.local/more_feed_data/sampleFeed.xml");
 
 		//$this->processFeed($feed_data, $fetch_url);
+		// End for testing...
 		
 
 		print "</div>";
