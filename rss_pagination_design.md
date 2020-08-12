@@ -12,6 +12,10 @@ By fetching page 2, and then page 3, etc. it is possible to collect all of the p
 I think it is reasonable to fetch one or two past feed pages alongside the normal request for the current feed.  This would double or triple the load, yes, but it is an incredibly small load still, and in the same order of magnitude.
 
 ## Control
+Each feed will need to be manually marked to retrieve historical posts.  Probably a "Attempt to retrieve historical posts" checkbox on the Plugins tab of the Edit Feed window.  This will only be presented if the cleanGenerator value for the feed is Wordpress.
+
+If the feed is marked in this way, some code in HOOK_FETCH_FEED will kick in.  This will alternate doing nothing for the feed with pulling a historical page for the feed.  This is an easy way to implement it but has some downsides: normal feed updating will happen half as often as normal, and historical updating will be slower than desired.
+
 Each retrieval attempt will be stored in a database table, including whether it succeeded.  A new retrieval attempt looks at the page number of the highest successful retrieval attempt and attempts to get the next page.
 
 Any articles added in the meantime are not an issue as that simply causes some already retrieved posts to be pushed onto the next page and retrieved again.  Article deletion could result in skipped articles but I think it is sufficiently rare.  Such a problem could be 99% solved by always fetching pairs of pages.  For example fetching 2 and 3, and then on the next attempt fetching 3 and 4, then 4 and 5.  The 1% scenario would be if more than a page-worth of articles was deleted.
